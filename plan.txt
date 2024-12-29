@@ -1,0 +1,131 @@
+TaggerLLM:
+    tags = tagger(text), tagovi treba da budu veoma deskriptivni
+    Treba da vrati parove (word, count), ignorise gramatiku isl
+    Moglo bi da se implementira bez LLM ako radimo tradiciono prebrojavanje
+    Vracamo zbir tf-idf svakog matchovanog taga.
+    
+Umesto TF mozemo da vracamo Relevancy koji racuna LLM (moze da se dobije skracivanjem mreze).
+Kasnije mozemo da skaliramo idf ili tf-idf po ovom parametru.
+Radi sa TaggerLLM obe verzije.
+U verziji 1 postoji "upper limit bitnosti" ili se bitnosti mnoze.
+
+TaggerLLM(2):
+    (ne koristi tf, nema veliki razlog, idf je dobra mera)
+    tags = tagger(text), tagovi treba da budu veoma deskriptivni
+    tags je neponavljajuca lista reci
+    Racunamo idf za svaki tag. Unikatniji tagovi imaju veci skor.
+    Za svaki upit matchujemo tagove i za sve matchovane tagove sabiramo idf vrednosti. To je ukupni teksta.
+    
+Menadzer:
+    Moze da ne postoji i bude samo Tagger.
+    Moze da expanduje upite da doda jos tagova.
+
+DB_Synthesis:
+    Interakcijom sa bazom dobija top N (10) skorova i tekstova iz upravivanja tagova.
+    Skorovi mogu da se pretvore u verovatnoce normalizacijom ili softmaxom.
+    Stvara citljiv tekst.
+
+Text_Synthesis:
+    Bazirano na oba odgovora i upitu stvara nove tagove.
+    Propmtuje obe baze novih tagovima (novi DB_Synthesis prompt).
+    Spaja prva dva odgovora i dva sintazovana odgovora.
+
+Reprompt:
+    Pokrecemo isti postupak tako da je input: "example output: {output} \n input {input}"
+    Mozda dobijemo bolji spoj tema prompotovanjem vise puta.
+
+Setup:
+    Taguje sve DB tekstove.
+
+
+IDF tabela:
+[
+    {
+        rec: <str>
+        idf: <float>
+    }
+]
+Odmah ucitamo u mapu u pythonu nemamo problema sa ovim.
+
+
+TaggerLLM json verzija 2
+[
+    {
+        index: <int>,
+        path_teksta: <str>
+        tagovi: [ <str>, <str> ... ]
+    }
+]
+
+Moze tekst umesto path_teksta ako nije prevelik fajl, verovatno mora ovako
+Tagovi sa veoma malim IDF ne moraju da se cuvaju zato sto nemaju veliki uticaj i stalno se ponavljaju.
+
+TaggerLLM json verzija 1
+[
+    {
+        index: <int>,
+        path_teksta: <str>
+        tagovi: [
+            {
+                name: <str>
+                count: <int>
+            },
+            ...
+        ]
+    }
+]
+
+
+Tekstovi:
+1 ili nekoliko po fajlu. Moze da se koristi bilo koji nosql db
+{
+    index: <int>,
+    naslov: <str>, # nebitno
+    path_teksta: <str>, # za svaki slucaj
+    tekst: <str>
+}
+
+
+Setup:
+    Prvo izracunaj idf svake reci (lakse je)
+
+    all_tags = []
+
+    for i, file in files:
+        tekst = file.read()
+        tags = tagger(tekst)
+        all_tags.append(sacuvaj_tagove(tags))  # idf limit
+        sacuvaj_tekst(tekst_path + i.json, tekst)
+    sacuvaj(all_tags)
+
+
+LLM inference:
+    text = Menadzer.expand(orig_text)
+    tags = tagger(text)
+    txt1 = DB_Synthesis(db1, tags)
+    txt2 = DB_Synthesis(db2, tags)
+
+    tags1 = tagger(txt1)
+    tags2 = tagger(txt2)
+
+    txt3 = DB_Synthesis(db1, tags1)
+    txt4 = DB_Synthesis(db2, tags2)
+    # ovaj proces sa txt3 i txt4 mozda moze da ne postoji ako radiom repeat prompt
+    
+    return Text_Synthesis(orig_text, txt1, txt2, txt3, txt4)
+
+Repeat:
+    txt = "input {orig_text}"
+    for _ in range(steps):
+        output = inference(txt)
+        txt = "{ input: {orig_text}, help output: {output}}"  # json
+    return output
+
+
+Bitno pitanje, koje cemo da koristimo out of the box, a koje fine tuniramo?
+
+https://en.wikipedia.org/wiki/Tf%E2%80%93idf#:~:text=The%20tf%E2%80%93idf%20is%20the,document%20or%20a%20web%20page.
+
+hiperparamtri: baza za log u idf, threshold idf
+Hteo bih da koristim TaggerLLM(2) i da svaka rec dobije svoj weight izracunat LLM-om. Ovo vec racunaju ali je pitanje kako ekstraktovati.
+Hteo bih da treniramo barem 1 od modela, mozda RLHF ako je nije tesko da se namesti.
