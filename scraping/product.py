@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
+from typing import Optional
+
 @dataclass
 class Product:
     product_name: str
@@ -8,4 +10,4 @@ class Product:
     unit_price: Decimal
     unit: str
     package_size: str
-    promo: float
+    promo: Optional[float] = None
