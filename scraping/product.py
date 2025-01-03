@@ -5,6 +5,7 @@ from typing import Optional, List
 
 @dataclass
 class Product:
+    search_term: str
     product_name: str
     price: Decimal
     unit_price: Decimal
