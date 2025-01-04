@@ -91,7 +91,6 @@ if __name__=='__main__':
             recipe_text[key] = value
 
         recipe_text['output'] = {'title': recipe_text.get("title"),
-                                 'tags': recipe_text.get("tags"),
                                  'description': recipe_text.get("description"),
                                  'ingredients': recipe_text.get("ingredients"),
                                  'directions': recipe_text.get('directions')}
