@@ -1,4 +1,5 @@
 from recipes_rag import RecipesRAG
+
 import re
 import torch
 
@@ -28,7 +29,7 @@ class OrchestratorAgent():
 
             code.replace('extract_ingredients', 'self.ingredients_agent.extract_ingredients')
             code.replace('get_prices', 'self.prices_agent.get_prices')
-            code.replace('query_recipes', 'self.recipes_rag.query_recipes')
+            code.replace('query_recipes', 'self.recipes_rag.retrieve')
 
             code = ('\n' + code).replace('\n', '\n    ')
             runner = f"""

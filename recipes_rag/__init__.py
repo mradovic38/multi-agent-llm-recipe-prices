@@ -1,0 +1,1 @@
+from .recipes_rag import RecipesRAG
