@@ -1,77 +1,69 @@
-import faiss
 from sentence_transformers import SentenceTransformer
+import faiss
+import numpy as np
+from typing import List, Dict
 import json
-from typing import Dict
+import os
 
-class RecipesRAG():
-    def __init__(self,
-                 recipes_json_path: str = "recipes_rag/recipes.json", 
-                 model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
-                 recipes_index_path: str = "recipes_rag/recipes_index.faiss") -> None:
-        
-        with open(recipes_json_path, "r", encoding="utf8") as f:
-            self.recipes = json.load(f)
+class RecipesRAG:
+    def __init__(self, raw_json_file: str = 'recipes_rag/recipes.json', 
+                 processed_json_file: str = 'recipes_rag/recipes_processed.json', 
+                 index_file: str = "recipes_rag/recipes.index"):
+        """Initialize the RecipesRAG class by indexing recipes."""
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')  # Use a lightweight BERT model
+        self.recipes_raw = self.load_recipes(raw_json_file)
+        self.recipes_processed = self.load_recipes(processed_json_file)
+        self.index_file = index_file
 
-        self.model = SentenceTransformer(model_name)
-
-        # Generate embeddings for the recipes
-        embeddings = self.model.encode(self.recipes)
-
-        # Save embeddings to a FAISS index
-        dimension = embeddings.shape[1]
-        index = faiss.IndexFlatL2(dimension)
-        index.add(embeddings)
-        
-        # Save the FAISS index
-        faiss.write_index(index, recipes_index_path)
-
-        self.index=index
-
-
-    def retrieve_recipe(self, query: str, top_k: int = 1) -> Dict[str, str]:
-        # Generate query embedding
-        query_embedding = self.model.encode([query])
-        
-        # Perform similarity search
-        distances, indices = self.index.search(query_embedding, top_k)
-        
-        # Retrieve matching recipes
-        results = [self.recipes[i] for i in indices[0]]
-
-        return results
-
-
-    def answer_query(self, query: str, top_k: int = 1):
-        # Retrieve matching recipes
-        recipes = self.retrieve_recipe(query, top_k)
-        
-        # Format response
-        if recipes:
-            return recipes[0]
+        if os.path.exists(index_file):
+            self.index = faiss.read_index(index_file)
         else:
-            return "No recipes found matching your query."
+            self.index = self._build_index()
+            faiss.write_index(self.index, index_file)
+
+    def load_recipes(self, json_file: str) -> List[Dict]:
+        """Load recipes from a JSON file."""
+        with open(json_file, "r", encoding="utf-8") as file:
+            return json.load(file)
+
+    def _build_index(self) -> faiss.IndexFlatIP:
+        """Build FAISS index from the recipes."""
+        embeddings = []
+        for recipe in self.recipes_processed:
+            text = f"{recipe['title']} {recipe['ingredients']} {recipe['directions']}"
+            embeddings.append(self.model.encode(text))
+        embeddings = np.array(embeddings).astype("float32")
+
+        index = faiss.IndexFlatIP(embeddings.shape[1])  # Inner product for cosine similarity
+        index.add(embeddings)
+        return index
+
+    def retrieve(self, query: str, top_k: int = 1, return_scores=False):
+        """Retrieve the top-k most relevant recipes for the given query."""
+
+        query = query.lower()
+        query_embedding = self.model.encode(query).astype("float32").reshape(1, -1)
+        scores, indices = self.index.search(query_embedding, top_k)
+        # If the score is requested, include it in the response
+        if return_scores:
+            return [
+                {"recipe": self.recipes_raw[idx], "score": scores[0][i]}
+                for i, idx in enumerate(indices[0]) if idx < len(self.recipes_raw)
+            ]
+        else:
+            # Only return the recipes, without scores
+            return [
+                self.recipes_raw[idx]
+                for _, idx in enumerate(indices[0]) if idx < len(self.recipes_raw)
+            ]
         
-
-
-
 if __name__ == '__main__':
 
-    rr = RecipesRAG()
+    # Create RecipesRAG object
+    rag = RecipesRAG()
 
-    def show_result(query):
-        
-        print("---Query:---")
-        print(query)
-        print('\n')
-        print("---Result:---")
-        print(rr.answer_query(query))
-        print('-'*50)
-        print('\n')
-
-        
-    
-    query1 = "Give me a vegan recipe"
-    show_result(query1)
-    query2 = "How to make a pizza"
-    show_result(query2)
-
+    # Retrieve recipes
+    query = "peperonni pizaz"
+    results = rag.retrieve(query, top_k=5, return_scores=True)
+    for result in results:
+        print(f"Title: {result['recipe']['title']}, Score: {result['score']}")

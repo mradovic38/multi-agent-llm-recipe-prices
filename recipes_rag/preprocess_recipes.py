@@ -1,101 +1,96 @@
-
 import os
-import re
 import json
+import re
+import string
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+import nltk
+nltk.download('stopwords')
 
-from typing import Dict
-
-def parse_recipe_markdown(markdown_text: str) -> Dict:
-    """
-    Parse a recipe Markdown format into a structured dictionary.
-
-    Args:
-        markdown_text (str): The recipe text in Markdown format.
-
-    Returns:
-        Dict: A dictionary containing the structured recipe data.
-    """
-    # Initialize the result dictionary
-    result = {}
-
-    # Remove images (lines starting with "!" or containing Markdown image syntax)
-    markdown_text = re.sub(r"!\[.*?\]\(.*?\)", "", markdown_text)
-
-    # Extract metadata from the frontmatter
-    frontmatter_pattern = r"---\n(.*?)\n---"
-    frontmatter_match = re.search(frontmatter_pattern, markdown_text, re.DOTALL)
-    if frontmatter_match:
-        frontmatter = frontmatter_match.group(1).strip()
-        for line in frontmatter.split("\n"):
-            if ": " in line:
-                key, value = line.split(": ", 1)
-                result[key.strip()] = value.strip().strip("'").strip('"')
-
-    # Extract the introduction (everything before "## Ingredients")
-    intro_pattern = r"---.*?---\n(.*?)(?=\n## Ingredients)"
-    intro_match = re.search(intro_pattern, markdown_text, re.DOTALL)
-    if intro_match:
-        introduction = intro_match.group(1).strip()
-        # Remove emojis using a regex for Unicode emoji ranges
-        introduction = re.sub(r"[^\w\s,.!?]", "", introduction)
-        result["description"] = introduction
-
-    # Extract ingredients (under the "## Ingredients" headline)
-    ingredients_pattern = r"## Ingredients\n\n(.*?)(?=\n## Directions|\n##|$)"
-    ingredients_match = re.search(ingredients_pattern, markdown_text, re.DOTALL)
-    if ingredients_match:
-        ingredients = [
-            ingredient.strip()
-            for ingredient in ingredients_match.group(1).strip().split("\n")
-            if ingredient.strip()
-        ]
-        result["ingredients"] = ingredients
-
-    # Extract directions (under the "## Directions" headline)
-    directions_pattern = r"## Directions\n\n(.*?)(?=\nOriginally|\n##|$)"
-    directions_match = re.search(directions_pattern, markdown_text, re.DOTALL)
-    if directions_match:
-        directions = [
-            step.strip()
-            for step in directions_match.group(1).strip().split("\n")
-            if step.strip()
-        ]
-        result["directions"] = directions
-
-    # Extract original source link if present
-    source_pattern = r"Originally published at (.*)"
-    source_match = re.search(source_pattern, markdown_text)
-    if source_match:
-        result["source"] = source_match.group(1).strip()
-
-    return result
-
-
-
-if __name__=='__main__':
-    DIR = 'recipes_rag/content'
+def preprocess_text(text: str) -> str:
+    """Preprocess text by lowering case, removing punctuation, stopwords, and stemming."""
     
-    recipes_texts = []
-    paths = os.listdir(DIR)
-    paths.remove("_index.md")
+    # Convert to lowercase
+    text = text.lower()
 
-    for path in paths:
+    # Remove punctuation
+    text = text.translate(str.maketrans('', '', string.punctuation))
 
-        with open(os.path.join(DIR, path), "r", encoding="utf-8") as file:
-            recipe = file.read()
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    text = ' '.join([word for word in text.split() if word not in stop_words])
 
-        recipe_text = parse_recipe_markdown(recipe)
+    # Optionally, apply stemming
+    stemmer = PorterStemmer()
+    text = ' '.join([stemmer.stem(word) for word in text.split()])
 
-        for key in list(recipe_text.keys()):
-            value = recipe_text.get(key)
-            recipe_text[key] = value
+    # Remove extra whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
 
-        recipe_text['output'] = {'title': recipe_text.get("title"),
-                                 'description': recipe_text.get("description"),
-                                 'ingredients': recipe_text.get("ingredients"),
-                                 'directions': recipe_text.get('directions')}
-        
-        recipes_texts.append(recipe_text)
+    return text
 
-    with open ("recipes_rag/recipes.json", "w", encoding="utf8") as json_file:
-        json_file.write(json.dumps(recipes_texts, ensure_ascii=False))
+def preprocess_markdown_files(input_dir: str = 'recipes_rag/content', 
+                              raw_output_file: str = 'recipes_rag/recipes.json',
+                              processed_output_file: str = 'recipes_rag/recipes_processed.json'):
+    """Preprocess recipe markdown files and save them as a JSON list."""
+    recipes_raw = []
+    recipes_processed = []
+    image_pattern = r"!\[.*?\]\(.*?\)"  # Matches Markdown images
+
+    for filename in os.listdir(input_dir):
+        if filename.endswith(".md"):
+            with open(os.path.join(input_dir, filename), "r", encoding="utf-8") as file:
+                content = file.read()
+
+            # Remove images
+            content = re.sub(image_pattern, "", content)
+
+            # Split metadata and main content
+            metadata, main_content = content.split("---", maxsplit=2)[1:]
+            metadata = {
+                line.split(":")[0].strip(): line.split(":", maxsplit=1)[1].strip()
+                for line in metadata.strip().split("\n")
+                if ":" in line
+            }
+
+            # Extract sections
+            sections = re.split(r"^##\s", main_content, flags=re.MULTILINE)
+            sections = [s.strip() for s in sections if s.strip()]
+
+            # Parse ingredients and directions
+            ingredients, directions = None, None
+            for section in sections:
+                if section.startswith("Ingredients"):
+                    ingredients = section.split("\n", maxsplit=1)[-1].strip()
+                elif section.startswith("Directions"):
+                    directions = section.split("\n", maxsplit=1)[-1].strip()
+            
+            recipes_raw.append({
+                "title": metadata.get("title", ""),
+                "tags": metadata.get("tags", "").strip("[]").replace("'", "").split(", "),
+                "ingredients": ingredients if ingredients else "",
+                "directions": directions if directions else "",
+            })
+
+            # Preprocess content
+            preprocessed_ingredients = preprocess_text(ingredients) if ingredients else ""
+            preprocessed_directions = preprocess_text(directions) if directions else ""
+            preprocessed_title = preprocess_text(metadata.get("title", ""))
+
+            recipes_processed.append({
+                "title": preprocessed_title,
+                "tags": metadata.get("tags", "").strip("[]").replace("'", "").split(", "),
+                "ingredients": preprocessed_ingredients,
+                "directions": preprocessed_directions,
+            })
+
+    # Save to JSON
+    with open(raw_output_file, "w", encoding="utf-8") as json_file:
+        json.dump(recipes_raw, json_file, indent=4, ensure_ascii=False)
+
+    with open(processed_output_file, "w", encoding="utf-8") as json_file:
+        json.dump(recipes_processed, json_file, indent=4, ensure_ascii=False)
+
+# Example usage
+if __name__ == '__main__':
+    preprocess_markdown_files()
