@@ -1,12 +1,5 @@
-from models.encoder_decoder_model import ABCEncoderDecoderModel, APIEncoderDecoderModel, LocalEncoderDecoderModel
+from agents.ABCAgent import ABCAgent
 
-class ABCSummaryAgent(ABCEncoderDecoderModel):
-    pass
-
-class APISummaryAgent(APIEncoderDecoderModel):
+class SummaryAgent(ABCAgent):
     def prompt(self, input, parameters=None) -> str:
-        return super().prompt("summarize: " + input, parameters)
-
-class LocalSummaryAgent(LocalEncoderDecoderModel):
-    def prompt(self, input, parameters=None) -> str:
-        return super().prompt("summarize: " + input, parameters)
+        return self.model.prompt("summarize: " + input, parameters)

@@ -16,9 +16,9 @@ class PricesAgent():
         self.conditions_tag = conditions_tag 
 
 
-    def get_prices(self, ingredients: List[Ingredient], condition: str):
+    def get_prices(self, ingredients: List[Ingredient], conditions: List[str]):
         ingredients = {ingredient.name: {'amount': ingredient.amount, 'unit': ingredient.unit} for ingredient in ingredients} 
-        
+        conditions_text = ", ".join(c for c in conditions)
 
         print("Searching the web...")
         self.scraper.search_and_convert(ingredients.keys())
@@ -26,7 +26,11 @@ class PricesAgent():
         print("Filtering products...")
         self.extractor.fill_helper_table(ingredients)
 
-        self._query_llm(''.join(ingredients.keys()), condition)
+        sql_query = self._query_llm(''.join(ingredients.keys()), conditions_text)
+
+        result = self.extractor.execute_queries([sql_query])
+
+        return result
 
         
 
@@ -56,19 +60,6 @@ if __name__ == '__main__':
     ingredients = [
         Ingredient('chicken', 700, 'g')
     ]
+    conditions = 'no soy'
 
     pa.get_prices(ingredients)
-    
-
-
-
-    
-"""
-SELECT *
-FROM products
-________________
-WHERE product_name IN ('flour', 'water', 'dry yeast', 'salt')
-  AND price < 100
-GROUP BY product_name, price
-HAVING SUM(price) > 1000;
-"""

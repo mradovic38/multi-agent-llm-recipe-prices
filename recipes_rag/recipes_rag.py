@@ -6,9 +6,9 @@ import json
 import os
 
 class RecipesRAG:
-    def __init__(self, raw_json_file: str = 'recipes_rag/recipes.json', 
-                 processed_json_file: str = 'recipes_rag/recipes_processed.json', 
-                 index_file: str = "recipes_rag/recipes.index"):
+    def __init__(self, raw_json_file: str = '/teamspace/studios/this_studio/multi-agent-llm-recipe-prices/recipes_rag/recipes.json', 
+                 processed_json_file: str = '/teamspace/studios/this_studio/multi-agent-llm-recipe-prices/recipes_rag/recipes_processed.json', 
+                 index_file: str = "/teamspace/studios/this_studio/multi-agent-llm-recipe-prices/recipes_rag/recipes.index"):
         """Initialize the RecipesRAG class by indexing recipes."""
         self.model = SentenceTransformer('all-MiniLM-L6-v2')  # Use a lightweight BERT model
         self.recipes_raw = self.load_recipes(raw_json_file)

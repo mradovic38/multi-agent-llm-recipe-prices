@@ -1,21 +1,26 @@
 import json
 from typing import List
 import re
+from agents.ABCAgent import ABCAgent
 
-class IngredientsAgent():
-    def __init__(self, model, prompt_path='ingredients_prompt.txt', ingredients_tag="<ingredients>", exclusions_tag = "<exclude>"):
+class IngredientsAgent(ABCAgent):
+    def __init__(self, model, prompt_path="/teamspace/studios/this_studio/multi-agent-llm-recipe-prices/agents/ingridients/prompts/ingredients_prompt.txt", ingredients_tag="<ingredients>", exclusions_tag = "<exclude>"):
+        super().__init__(model)
         self.model = model
-
-        self.prompt = open(prompt_path).read()
+        self.prompt_txt = open(prompt_path).read()
         self.ingredients_tag = ingredients_tag
         self.exclusions_tag = exclusions_tag
         
-    def extract_ingredients(ingredients, exclude: List[str]):
+    def extract_ingredients(self, ingredients, exclude):
         print("Extracting ingredients...")
         exclude = ", ".join([str(x) for x in exclude])
-        response = self._query_llm(ingredients, )
-        ingredients_structured = json.loads(response)
+        query = self.prompt_txt.replace(self.ingredients_tag, ingredients)
+        query = query.replace(self.exclusions_tag, exclude)
+        response = self._prompt(query)
 
+        print(response)
+        ingredients_structured = json.loads(response)
+        
         return 
 
     
@@ -41,16 +46,13 @@ class IngredientsAgent():
                     ingredient['unit'] = 'g'
                 
 
-    def _query_llm(self, ingredients, exclude):
-        query = self.prompt.replace(self.ingredients_tag, ingredients)
-        query = query.replace(self.exclusions_tag, exclude)
-
-        generated_text = self.model.prompt(query)
-
-        code_match = re.search(r"(.*?)```", text_after_query, re.DOTALL)
+    def _prompt(self, input):
+        generated_text = self.model.prompt(input)
+        # generated text treba da se pretvori u json ako nije
+        code_match = re.search(r"(.*?)```", generated_text, re.DOTALL)
         if code_match:
             generated_code = code_match.group(1).strip()
         else:
             generated_code = ''
-
+        return generated_code
   

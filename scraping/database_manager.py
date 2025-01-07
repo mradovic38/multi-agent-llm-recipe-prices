@@ -1,4 +1,4 @@
-from .sql_tables import Base, ProductHelper
+from sql_tables import Base, ProductHelper
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

@@ -1,5 +1,5 @@
-from .database_manager import DatabaseManager
-from .sql_tables import ProductSQL, ProductHelper
+from database_manager import DatabaseManager
+from sql_tables import ProductSQL, ProductHelper
 
 from sqlalchemy import text, select, or_
 from typing import List
@@ -13,17 +13,18 @@ class PriceExtractor():
         
     def execute_queries(self, queries):
         """
-        Executes a chain of queries where each query works on the result of the previous one.
+        Executes a chain of queries where each query works on the result of the previous one
+        and returns a list of BillItem objects.
 
         :param queries: List of SQL query strings to execute in order
-        :return: Final result after all queries are executed
+        :return: List of BillItem objects after all queries are executed
         """
         
         result = None
-        
+        bill_items = []
+
         with self.db_manager.session_scope() as session:
             
-
             for query in queries:
                 # If it's the first query, execute directly on the database
                 if result is None:
@@ -32,9 +33,28 @@ class PriceExtractor():
                     # For subsequent queries, bind the previous result
                     result = session.execute(text(query), {'previous_result': result})
                 
-                result = result.fetchall()
-        
-        return result
+                # Fetch all results from the query
+                rows = result.fetchall()
+                
+                # Convert each row to a BillItem instance
+                for row in rows:
+                    # Extract columns from the result tuple
+                    bill_item = BillItem(
+                        search_term=row.search_term,
+                        product_name=row.product_name,
+                        url=row.url,
+                        price=Decimal(row.price),
+                        unit=row.unit,
+                        package_size=row.package_size,
+                        promo=row.promo if row.promo else 0,
+                        contains_allergens=row.contains_allergens.split(",") if row.contains_allergens else [],
+                        does_not_contain_allergens=row.does_not_contain_allergens.split(",") if row.does_not_contain_allergens else [],
+                        amount=row.amount,
+                        price_for_amount=Decimal(row.price_for_amount)
+                    )
+                    bill_items.append(bill_item)
+            
+        return bill_items
     
 
     def fill_helper_table(self, ingredients):
@@ -82,5 +102,5 @@ class PriceExtractor():
 
 if __name__=='__main__':
     pe = PriceExtractor()
-    rows = pe.execute_query()
+    rows = pe.execute_queries(['SELECT * FROM product_helper'])
     print(rows)

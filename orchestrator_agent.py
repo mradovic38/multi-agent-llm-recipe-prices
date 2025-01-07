@@ -65,12 +65,15 @@ class OrchestratorAgent():
         query = self.prompt.replace(self.user_input_tag, user_input)
         
         generated_text = self.model.prompt(query)
+        
 
-        code_match = re.search(r"(.*?)```", text_after_query, re.DOTALL)
+        code_match = re.search(r"```py\n(.*?)```", generated_text, re.DOTALL)
+
+        print(code_match)
         if code_match:
-            generated_code = code_match.group(1).strip()
+            generated_code = code_match.group(0).strip()
         else:
-            generated_code = ''
+            generated_code = "return []"
 
         
         return generated_code
