@@ -6,7 +6,7 @@ import torch
 
 class OrchestratorAgent():
 
-    def __init__(self, model, recipes_rag, ingredients_agent, prices_agent, synthesis_agent, memory_agent=None):
+    def __init__(self, model, recipes_rag: RecipesRAG, ingredients_agent, prices_agent, synthesis_agent, memory_agent=None):
 
         self.memory_agent = memory_agent
         self.synthesis_agent = synthesis_agent
@@ -34,7 +34,7 @@ class OrchestratorAgent():
             code = ('\n' + code).replace('\n', '\n    ')
             runner = f"""
             def run_python_code():
-            {new_text}
+            {code}
             """
             exec(runner)
 
