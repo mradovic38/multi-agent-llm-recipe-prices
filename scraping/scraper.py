@@ -18,7 +18,11 @@ class Scraper(ABC):
             try:
                 if force_update or self.converter.needs_update(search_term):
                     logger.info(f"Searching for term: {search_term}")
-                    results = self.search_single(search_term)
+                    try:
+                        results = self.search_single(search_term)
+                    except Exception as e:
+                        logger.info(f"Skipping '{search_term}. No results or error.: {e}'")
+                        continue
                     self.converter.bulk_insert_from_products(results)
                     self.converter.update_search_history(search_term)
                     logger.info(f"Successfully processed {len(results)} results for '{search_term}'")

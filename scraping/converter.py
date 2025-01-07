@@ -18,7 +18,6 @@ class ScrapedToSqlConverter:
             search_term=product.search_term,
             product_name=product.product_name,
             price=product.price,
-            unit_price=product.unit_price,
             unit=product.unit,
             package_size=product.package_size,
             promo=product.promo,
@@ -28,12 +27,21 @@ class ScrapedToSqlConverter:
         )
 
     def bulk_insert_from_products(self, products: List[Product], batch_size: int = 1000) -> None:
-        """Insert multiple Product dataclass instances into the database in batches."""
+        """Insert or update multiple Product dataclass instances into the database in batches."""
         with self.db_manager.session_scope() as session:
-            sql_products = [self.product_to_sql(product) for product in products]
-            for i in range(0, len(sql_products), batch_size):
-                batch = sql_products[i:i + batch_size]
-                session.add_all(batch)
+            for i in range(0, len(products), batch_size):
+                batch = products[i:i + batch_size]
+                for product in batch:
+                    existing_product = session.query(ProductSQL).filter_by(product_name=product.product_name).first()
+                    if existing_product:
+                        # Update fields
+                        existing_product.price = product.price
+                        existing_product.promo = product.promo
+                        # Add other fields as necessary
+                    else:
+                        # Insert new product
+                        session.add(self.product_to_sql(product))
+                session.commit()
 
     def get_all_products(self) -> List[ProductSQL]:
         """Retrieve all products from the database."""

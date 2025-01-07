@@ -27,17 +27,13 @@ class DatabaseDisplay:
                 'display': 'Price',
                 'format': lambda x: float(x)
             },
-            'unit_price': {
-                'display': 'Unit Price',
-                'format': lambda x: float(x)
-            },
             'unit': {
                 'display': 'Unit',
                 'format': lambda x: x
             },
             'package_size': {
                 'display': 'Package',
-                'format': lambda x: x
+                'format': lambda x: float(x)
             },
             'promo': {
                 'display': 'Promo',
@@ -189,7 +185,7 @@ def main():
     
     # Display products sorted by price
     display.display_products(
-        columns=['product_name', 'price', 'unit_price'],
+        columns=['search_term','product_name', 'price', 'unit', 'package_size'],
         sort_by='price',
         reverse=True
     )
