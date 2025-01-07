@@ -1,8 +1,10 @@
+from .converter import ScrapedToSqlConverter
+from .product import Product
+
 from abc import ABC, abstractmethod
 from typing import List
 import logging
-from converter import ScrapedToSqlConverter
-from product import Product
+
 
 logger = logging.getLogger(__name__)
 

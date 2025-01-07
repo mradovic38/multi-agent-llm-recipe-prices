@@ -1,10 +1,11 @@
+from .sql_tables import ProductSQL, SearchHistory
+from .database_manager import DatabaseManager
+from .product import Product
+
 from typing import List
 from decimal import Decimal
 from datetime import datetime, timedelta
 import logging
-from sql_tables import ProductSQL, SearchHistory
-from database_manager import DatabaseManager
-from product import Product
 
 logger = logging.getLogger(__name__)
 

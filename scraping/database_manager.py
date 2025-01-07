@@ -1,11 +1,13 @@
+from .sql_tables import Base, ProductHelper
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from typing import Generator
-from sql_tables import Base
+
 
 class DatabaseManager:
-    def __init__(self, database_url: str):
+    def __init__(self, database_url: str = "sqlite:///products.db"):
         self.engine = create_engine(database_url)
         Base.metadata.create_all(self.engine)
         self.SessionFactory = sessionmaker(bind=self.engine)
@@ -22,3 +24,8 @@ class DatabaseManager:
             raise
         finally:
             session.close()
+
+    def reinitialize_product_helper(self):
+        """Drop and recreate the product_helper table."""
+        ProductHelper.__table__.drop(self.engine, checkfirst=True)  # Drop table if it exists
+        ProductHelper.__table__.create(self.engine)  # Recreate the table

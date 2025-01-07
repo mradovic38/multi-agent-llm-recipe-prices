@@ -1,5 +1,5 @@
-from sql_tables import ProductSQL, SearchHistory
-from database_manager import DatabaseManager
+from .sql_tables import ProductSQL, SearchHistory
+from .database_manager import DatabaseManager
 
 from typing import Optional, List, Dict, Any
 from tabulate import tabulate
