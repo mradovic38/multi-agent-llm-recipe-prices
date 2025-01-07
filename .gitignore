@@ -2,3 +2,7 @@
 __pycache__
 content
 prices_scraper.py
+
+models/t5-3b/*
+models/t5-large/*
+models/zephyr-7b-beta-local/*

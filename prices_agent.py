@@ -31,8 +31,16 @@ class PricesAgent():
         
 
     def _query_llm(self, ingredients:str, condition:str):
-        self.prompt.replace(self.ingredients_tag, ingredients)
-        self.prompt.replace(self.conditions_tag, condition)
+        query = self.prompt.replace(self.ingredients_tag, ingredients)
+        query = query.replace(self.conditions_tag, condition)
+        
+        generated_text = self.model.prompt(query)
+        
+        code_match = re.search(r"(.*?)```", text_after_query, re.DOTALL)
+        if code_match:
+            generated_code = code_match.group(1).strip()
+        else:
+            generated_code = ''
 
         
 
