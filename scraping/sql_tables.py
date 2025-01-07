@@ -10,19 +10,18 @@ class ProductSQL(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     search_term = Column(String, nullable=False)
-    product_name = Column(String, nullable=False)
+    product_name = Column(String, nullable=False, unique=True)
     url = Column(String, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
-    unit_price = Column(Numeric(10, 2), nullable=False)
     unit = Column(String, nullable=False)
-    package_size = Column(String, nullable=False)
+    package_size = Column(Float, nullable=False)
     promo = Column(Float, nullable=False)
     contains_allergens = Column(String, nullable=True)
     does_not_contain_allergens = Column(String, nullable=True)
     
     def __repr__(self):
         return (f"<Product(search_term={self.search_term}, product_name={self.product_name}, "
-                f"price={self.price}, unit_price={self.unit_price}, unit={self.unit}, "
+                f"price={self.price}, unit={self.unit}, "
                 f"package_size={self.package_size}, promo={self.promo}, "
                 f"contains_allergens=[{self.contains_allergens}], "
                 f"does_not_contain_allergens=[{self.does_not_contain_allergens}]"
