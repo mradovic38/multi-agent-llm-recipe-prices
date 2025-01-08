@@ -13,10 +13,10 @@ You are an orchestrator agent in a multi-agent LLM system for answering question
 
 - `extract_ingredients`:
   Purpose:
-  Extracts ingredients from a ingredients text of a recipe and returns them in a structured format.
+  Extracts ingredients from a recipe and returns them in a structured format.
 
   Args:
-  ingredients (str): Ingredients section of a recipe.
+  ingredients (Recipe): Recipe to extract ingredients from.
   exclude_list (List[str]): Ingredients to exclude
 
   Returns:
@@ -47,7 +47,7 @@ Give me a recipe for under 400 RSD.
 recipes = query_recipes("recipe", top_k=100)
 
 for recipe in recipes:
-	ingredients = extract_ingredients(recipe['ingredients'])
+	ingredients = extract_ingredients(recipe)
 	price, total_price = get_prices(ingredients)
 
 	if total_price < 400:
@@ -63,7 +63,7 @@ How to make a Caesar salad and how much are the ingredients?
 ***Pyhon Code**:
 ```py
 recipe = query_recipes("caesar salad")
-ingredients = extract_ingredients(recipe['ingredients'])
+ingredients = extract_ingredients(recipe)
 prices, total_price = get_prices(ingredients)
 
 return recipe, prices, total_price
@@ -107,7 +107,7 @@ min_price = Decimal('infinity')
 min_price_recipe = None
 
 for recipe in recipes:
-	ingredients = extract_ingredients(recipe['ingredients'])
+	ingredients = extract_ingredients(recipe)
 	prices, total_price = get_prices(ingredients, conditions=["cheapest"])
 
 	if total_price < min_price:
@@ -132,7 +132,7 @@ recipes = []
 prices = []
 
 for recipe in recipes:
-	ingredients = extract_ingredients(recipe['ingredients'], exclude_list=['flour'])
+	ingredients = extract_ingredients(recipe, exclude_list=['flour'])
 	price, total_price = get_prices(ingredients, conditions=['gluten free'])
 
 	if price > 1000 and price < 2000:
@@ -154,7 +154,7 @@ Generate a shopping list for 'Spaghetti Carbonara' I want to make for my mom usi
 **Pyhon Code**:
 ```py
 recipe = query_recipes("spaghetti carbonara", top_k=1)
-ingredients = extract_ingredients(recipe['ingredients'])
+ingredients = extract_ingredients(recipe)
 prices, total_price = get_prices(ingredients, conditions=["cheapest", "no soy"])
 
 return recipe, prices, total_price
