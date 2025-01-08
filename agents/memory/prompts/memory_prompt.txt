@@ -1,0 +1,12 @@
+Summarize the key facts from this conversation concisely in one or two sentences. If the user has mentioned any allergies, include specific details like "User is allergic to peanuts" or similar statements.
+
+**Current value:**
+<current-val>
+
+**Last query:**
+<last-query>
+
+**Last output:**
+<last-output>
+
+**New summary:**

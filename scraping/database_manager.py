@@ -1,4 +1,4 @@
-from sql_tables import Base, ProductHelper
+from .sql_tables import Base, ProductHelper
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -7,8 +7,8 @@ from typing import Generator
 
 
 class DatabaseManager:
-    def __init__(self, database_url: str = "sqlite:///products.db"):
-        self.engine = create_engine(database_url)
+    def __init__(self, db_url: str = "sqlite:///products.db"):
+        self.engine = create_engine(db_url)
         Base.metadata.create_all(self.engine)
         self.SessionFactory = sessionmaker(bind=self.engine)
 

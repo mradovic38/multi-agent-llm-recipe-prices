@@ -3,25 +3,39 @@ from typing import List
 import re
 from agents.ABCAgent import ABCAgent
 
+from ingredient import Ingredient
+
 class IngredientsAgent(ABCAgent):
-    def __init__(self, model, prompt_path="/teamspace/studios/this_studio/multi-agent-llm-recipe-prices/agents/ingridients/prompts/ingredients_prompt.txt", ingredients_tag="<ingredients>", exclusions_tag = "<exclude>"):
+    def __init__(
+        self, 
+        model, 
+        prompt_path="/teamspace/studios/this_studio/multi-agent-llm-recipe-prices/agents/ingredients/prompts/ingredients_prompt.txt", 
+        ingredients_tag="<ingredients>", exclusions_tag = "<exclude>"):
         super().__init__(model)
         self.model = model
         self.prompt_txt = open(prompt_path).read()
         self.ingredients_tag = ingredients_tag
         self.exclusions_tag = exclusions_tag
         
-    def extract_ingredients(self, ingredients, exclude):
-        print("Extracting ingredients...")
-        exclude = ", ".join([str(x) for x in exclude])
-        query = self.prompt_txt.replace(self.ingredients_tag, ingredients)
-        query = query.replace(self.exclusions_tag, exclude)
-        response = self._prompt(query)
+    def extract_ingredients(self, recipe, exclude:List[str] = []):
+        if isinstance(recipe, list):
+            recipe = recipe[0]
 
+        ingredients = recipe['ingredients']
+
+        print("Extracting ingredients...")
+        exclude_str = ", ".join(exclude) if exclude else ""
+
+        response = self._query_llm(ingredients, exclude_str)
+
+        print("-"*100)
+        print("[INGREDIENTS] Extracted ingredients:")
         print(response)
+        print("-"*100)
+
         ingredients_structured = json.loads(response)
         
-        return ingredients_structured
+        return  [Ingredient(**item) for item in ingredients_structured]
 
     
     def _convert_units(self, ingredients):
@@ -46,13 +60,18 @@ class IngredientsAgent(ABCAgent):
                     ingredient['unit'] = 'g'
                 
 
-    def _prompt(self, input):
-        generated_text = self.model.prompt(input)
-        # generated text treba da se pretvori u json ako nije
-        code_match = re.search(r"(.*?)```", generated_text, re.DOTALL)
+    def _query_llm(self, ingredients, exclusions):
+        query = self.prompt_txt.replace(self.ingredients_tag, ingredients)
+        query = query.replace(self.exclusions_tag, exclusions)
+
+        generated_text = self.model.prompt(query)
+        text_after_query = generated_text.split(query, 1)[-1]
+        # print(text_after_query)
+        
+        code_match = re.search(r"(.*?)```", text_after_query, re.DOTALL)
         if code_match:
             generated_code = code_match.group(1).strip()
         else:
-            generated_code = ''
+            generated_code = '[]'
         return generated_code
   

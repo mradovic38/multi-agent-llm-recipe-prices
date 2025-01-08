@@ -1,5 +1,6 @@
 from recipes_rag import RecipesRAG
-from agents.ingridients.ingridients import IngredientsAgent
+from agents.ingredients.ingredients_agent import IngredientsAgent
+from agents.synthesis.synthesis_agent import SynthesisAgent
 
 import re
 import traceback
@@ -7,7 +8,8 @@ import traceback
 
 class OrchestratorAgent():
 
-    def __init__(self, model, recipes_rag: RecipesRAG, ingredients_agent, prices_agent, synthesis_agent, memory_agent=None, 
+    def __init__(self, model, recipes_rag: RecipesRAG, ingredients_agent: IngredientsAgent, 
+    prices_agent, synthesis_agent: SynthesisAgent, memory_agent=None, 
     prompt_path:str='multi-agent-llm-recipe-prices/agents/orchestrator/prompts/orchestrator_prompt.txt', user_input_tag:str = '<user-input>'):
 
         self.memory_agent = memory_agent
@@ -47,9 +49,10 @@ class OrchestratorAgent():
 
             code = ('\n' + code).replace('\n', '\n    ')
             runner = f"def dynamic_method(self):\n{code}"
-            print('--------------------------------------------------')
+            print("-"*100)
+            print("[ORCHESTRATOR] Generated function:")
             print(runner)
-            print('---------------------------------------------------')
+            print("-"*100)
 
             local_scope = {}
             exec(runner, globals(), local_scope)
@@ -64,11 +67,7 @@ class OrchestratorAgent():
             if result == [] or not result:
                 return "Error generating response: No matching results found."
 
-            print(result)
-            x = {}
-            x['recipes'], x['prices'], x['total_price'] = result
-
-            response = self.synthesis_agent.synthesize(input, x)
+            response = self.synthesis_agent.synthesize(input, result)
 
             
             if self.memory_agent:

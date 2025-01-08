@@ -18,32 +18,26 @@ class SynthesisAgent():
 
         self.model = model
 
-    def total_price(self, bill_data, items_ids):
-        return 0 # TODO
 
     def synthesize(self, user_input, data):
 
-        print('Synthesizing response...')
-        recipes_data = data.get('recipes', '')
-        if recipes_data:
-            recipes_data = json.dumps(recipes_data, indent=2)
-        bill_data = data.get('bill', '')
-        if bill_data:
-            bill_data = json.dumps([asdict(item) for item in bill_data], indent=2)
+        print('Synthesizing the answer...')
+        recipes_data, bill_data, total_price = data 
         
-        
-        response = self._query_llm(user_input, recipes_data, bill_data)
+        response = self._query_llm(user_input, recipes_data, bill_data, total_price)
 
         return response
         
 
-    def _query_llm(self, user_input:str, recipes_data:str='', bill_data:str=''):
+    def _query_llm(self, user_input:str, recipes_data, bill_data, total_price):
         
         data_input = ''
         if recipes_data:
             data_input += f'\n**Recipes:**\n```json\n{recipes_data}\n```'
         if bill_data:
             data_input += f'\n**Products:**\n```json\n{recipes_data}\n```\n'
+        if total_price:
+            data_input += f'\n**Total price:**\n{total_price}\n'
 
 
         query = self.prompt_text.replace(self.user_input_tag, user_input)
@@ -52,8 +46,6 @@ class SynthesisAgent():
         generated_text = self.model.prompt(query)
         text_after_query = generated_text.split(query, 1)[-1]
         
-        print(text_after_query)
-        print('-'*100)
         response = re.search(r"(.*?)<end>", text_after_query, re.DOTALL)
 
         if response:

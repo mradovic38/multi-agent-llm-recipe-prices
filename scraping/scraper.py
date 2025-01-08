@@ -1,5 +1,5 @@
-from converter import ScrapedToSqlConverter
-from product import Product
+from .converter import ScrapedToSqlConverter
+from .product import Product
 
 from abc import ABC, abstractmethod
 from typing import List

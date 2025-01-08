@@ -4,8 +4,7 @@ IMPORTANT: end the synthesized response of each example with <end>
 You have access to the following:
 1. **Recipes**: A list of recipes with their title, tags, ingredients, and directions.
 2. **Products**: A list of articles related to the user's shopping query, including their price details.
-3. **Tools**: A tool `total_price` to calculate the total cost of a shopping list. Use it when the user wants to know the total cost. Args: List of the provided ids of BillItems. Returns total cost (sum).
-Respond clearly and concisely while directly addressing the user query.
+3. **Total Price**: The total price (return if provided)
 
 ---
 
@@ -58,9 +57,11 @@ Enjoy your delicious Spaghetti aglio e olio!
 **Available Data:**
 **Products:**
 [BillItem(id=1, search_term='chicken', product_name='Pilece grudi fud,SvezeM', url='https://www.maxi.rs/Meso-mesne-i-riblje-preradjevine/Pakovano-meso/Pilecje/Pilece-grudi-fud-SvezeM/p/7221719', price=Decimal('324.990000000000009094947017729282379150390625'), unit='g', package_size=650.0, amount=2, price_for_amount=Decimal('649.98000000000001818989403545856475830078125'), promo=0, contains_allergens=[], does_not_contain_allergens=[]), BillItem(id=2, search_term='chicken', product_name='Pileca krila 500 gr Sveze M', url='https://www.maxi.rs/Meso-mesne-i-riblje-preradjevine/Pakovano-meso/Pilecje/Pileca-krila-500-gr-Sveze-M/p/7449883', price=Decimal('149.990000000000009094947017729282379150390625'), unit='g', package_size=500.0, amount=2, price_for_amount=Decimal('299.98000000000001818989403545856475830078125'), promo=0, contains_allergens=[], does_not_contain_allergens=[]), BillItem(id=3, search_term='chicken', product_name='Domace pilece meso gril SM', url='https://www.maxi.rs/Meso-mesne-i-riblje-preradjevine/Pakovano-meso/Pilecje/Domace-pilece-meso-gril-SM/p/7309832', price=Decimal('463.98000000000001818989403545856475830078125'), unit='g', package_size=1600.0, amount=1, price_for_amount=Decimal('463.98000000000001818989403545856475830078125'), promo=0, contains_allergens=[], does_not_contain_allergens=[]), BillItem(id=4, search_term='chicken', product_name='Pileca jetra i srce 500gr Sveze M', url='https://www.maxi.rs/Meso-mesne-i-riblje-preradjevine/Pakovano-meso/Pilecje/Pileca-jetra-i-srce-500gr-Sveze-M/p/7449836', price=Decimal('154.979999999999989768184605054557323455810546875'), unit='g', package_size=500.0, amount=2, price_for_amount=Decimal('309.95999999999997953636921010911464691162109375'), promo=0, contains_allergens=[], does_not_contain_allergens=[]), BillItem(id=5, search_term='chicken', product_name='Dim.pileci file 300g Premia/Maxi MAP', url='https://www.maxi.rs/Meso-mesne-i-riblje-preradjevine/Pakovano-meso/Pilecje/Dim-pileci-file-300g-Premia-Maxi-MAP/p/7506577', price=Decimal('379.990000000000009094947017729282379150390625'), unit='g', package_size=300.0, amount=3, price_for_amount=Decimal('1139.970000000000027284841053187847137451171875'), promo=0, contains_allergens=[], does_not_contain_allergens=[]), BillItem(id=6, search_term='chicken', product_name='Domace omega pile NP', url='https://www.maxi.rs/Meso-mesne-i-riblje-preradjevine/Pakovano-meso/Pilecje/Domace-omega-pile-NP/p/7506691', price=Decimal('701.98000000000001818989403545856475830078125'), unit='g', package_size=1800.0, amount=1, price_for_amount=Decimal('701.98000000000001818989403545856475830078125'), promo=0, contains_allergens=[], does_not_contain_allergens=[]), BillItem(id=7, search_term='chicken', product_name='Omega pileci batak I karabatak 540 gr Pr', url='https://www.maxi.rs/Meso-mesne-i-riblje-preradjevine/Pakovano-meso/Pilecje/Omega-pileci-batak-I-karabatak-540-gr-Pr/p/7515877', price=Decimal('329.990000000000009094947017729282379150390625'), unit='g', package_size=540.0, amount=2, price_for_amount=Decimal('659.98000000000001818989403545856475830078125'), promo=0, contains_allergens=[], does_not_contain_allergens=[])]
+**Total price:**
+10000
 
 **Synthesized Response**:  
-The total cost of the chicken products is: <total_price([1, 2, 3, 4, 5, 6, 7])>
+The total cost of the chicken products is 10000 RSD.
 <end>
 
 ---
