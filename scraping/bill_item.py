@@ -11,12 +11,12 @@ class BillItem:
     price: Decimal
     unit: str
     package_size: float
+    amount: int
+    price_for_amount: Decimal
     promo: Optional[float] = 0
     contains_allergens: Optional[List[str]] = field(default_factory=list)
     does_not_contain_allergens: Optional[List[str]] = field(default_factory=list)
-    amount: int
-    price_for_amount: Decimal
-
+    
     def __post_init__(self):
         if self.contains_allergens is None:
             self.contains_allergens = []

@@ -1,9 +1,11 @@
 from database_manager import DatabaseManager
 from sql_tables import ProductSQL, ProductHelper
+from bill_item import BillItem
 
 from sqlalchemy import text, select, or_
 from typing import List
 import math
+from decimal import Decimal
 
 class PriceExtractor():
     def __init__(self, db_url="sqlite:///products.db"):

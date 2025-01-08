@@ -21,7 +21,7 @@ class IngredientsAgent(ABCAgent):
         print(response)
         ingredients_structured = json.loads(response)
         
-        return 
+        return ingredients_structured
 
     
     def _convert_units(self, ingredients):

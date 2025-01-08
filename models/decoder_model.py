@@ -2,18 +2,18 @@ import torch
 import time
 import re
 import requests
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 
 # Zbog siromastva i manjka vremena promptujemo online modele nekad
 # Mozda oba decoder i encoder decoder treba da imaju prompt ABCModel koji ima prompt str, dict -> str
 
 class ABCDecoderModel:
-    def prompt(self, input, parameters) -> str:
+    def prompt(self, input_t, parameters) -> str:
         return ''
         
 
 class APIDecoderModel(ABCDecoderModel):
-    def prompt(self, input, parameters=None) -> str:
+    def prompt(self, input_t, parameters=None) -> str:
         if parameters is None:
             parameters = {
                 "max_new_tokens": 200,
@@ -24,7 +24,7 @@ class APIDecoderModel(ABCDecoderModel):
                 "length_penalty": 0.4,
                 "do_sample": True,
                 "use_cache": True,
-                "early_stopping": True
+                "early_stopping": True,
             }
 
         API_URL = "https://api-inference.huggingface.co/models/microsoft/phi-3.5-mini-instruct"
@@ -69,16 +69,23 @@ class APIDecoderModel(ABCDecoderModel):
 class LocalDecoderModel(ABCDecoderModel):
     def __init__(self):
         #model_name = "phi-3.5-mini-instruct"
-        # model_name = "phi-3.5-mini-instruct"
+        #model_name = "phi-3.5-mini-instruct"
         model_name = "/teamspace/studios/this_studio/multi-agent-llm-recipe-prices/models/zephyr-7b-beta-local"
         # tokenizer = AutoTokenizer.from_pretrained(model_name)
         # device = "cpu"
-        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, use_fast=True)
+        quantization_config = BitsAndBytesConfig(
+           load_in_4bit=True,  # Use 4-bit quantization
+           bnb_4bit_use_double_quant=True,
+           bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.float16,
+        )
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
             device_map='auto',
-            pad_token_id=tokenizer.eos_token_id
-        )
+            pad_token_id=tokenizer.eos_token_id,
+            quantization_config=quantization_config,
+        ).eval()
  
         device = model.device
 
@@ -108,18 +115,17 @@ class LocalDecoderModel(ABCDecoderModel):
             return assistant_response
         return ""
 
-    def prompt(self, input, parameters=None, only_assist=True) -> str:
+    def prompt(self, input_t, parameters=None) -> str:
         if parameters is None:
             parameters = {
                 "max_new_tokens": 200,
-                "min_length": 10,
-                "temperature": 0.6,
-                "top_p": 0.9,
-                "num_beams": 3,
-                "length_penalty": 0.4,
-                "do_sample": True,
-                "use_cache": True,
-                "early_stopping": True
+                'do_sample': True,
+                'temperature': 0.6,
+                'top_p': 0.95,
+                'pad_token_id': self.tokenizer.pad_token_id,
+                'eos_token_id': self.tokenizer.eos_token_id,
+                'num_return_sequences': 1,
+                'max_new_tokens': 128
             }
 
             # parameters = {
@@ -135,21 +141,28 @@ class LocalDecoderModel(ABCDecoderModel):
             # }
 
         # inputs_t = self.tokenizer(input, return_tensors="pt", truncation=True).to(self.model.device)
-        inputs_t = self.tokenizer.apply_chat_template(input, tokenize=True, add_generation_prompt=True, return_tensors="pt").to(self.model.device)
-
+        #inputs_t = self.tokenizer.apply_chat_template(input, tokenize=True, add_generation_prompt=True, return_tensors="pt").to(self.model.device)
+        input_id = self.tokenizer.encode(input_t, return_tensors="pt").to(self.model.device)
         with torch.no_grad():
             outputs = self.model.generate(
-                inputs_t,
-                **parameters
+                input_id,
+                #inputs_t,
+            do_sample=True,
+            max_new_tokens=512,
+            temperature=0.6,
+            top_p=0.95,
+            pad_token_id=self.tokenizer.pad_token_id,
+            eos_token_id=self.tokenizer.eos_token_id,
+            num_return_sequences=1,
             )
-
+   
         out = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        inputs_t.to('cpu')
-        del inputs_t
+        #input.to('cpu')
+        #del input
         torch.cuda.empty_cache()
         torch.cuda.synchronize()
-        if only_assist:
-            return self.assistant_only(out)
+       # if only_assist:
+           # return self.assistant_only(out)
         return out
 
     def free(self):

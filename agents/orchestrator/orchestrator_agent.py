@@ -1,13 +1,14 @@
 from recipes_rag import RecipesRAG
+from agents.ingridients.ingridients import IngredientsAgent
 
 import re
-import torch
-from agents.ABCAgent import ABCAgent
+import traceback
 
-class OrchestratorAgent(ABCAgent):
-# ako se buni za nasledjianje samo obrisi nasledjivanje
+
+class OrchestratorAgent():
+
     def __init__(self, model, recipes_rag: RecipesRAG, ingredients_agent, prices_agent, synthesis_agent, memory_agent=None, 
-    prompt_path:str='/teamspace/studios/this_studio/multi-agent-llm-recipe-prices/agents/orchestrator/prompts/orchestrator_prompt.txt', user_input_tag:str = '<user-input>'):
+    prompt_path:str='multi-agent-llm-recipe-prices/agents/orchestrator/prompts/orchestrator_prompt.txt', user_input_tag:str = '<user-input>'):
 
         self.memory_agent = memory_agent
         self.synthesis_agent = synthesis_agent
@@ -16,13 +17,11 @@ class OrchestratorAgent(ABCAgent):
 
         self.recipes_rag = recipes_rag
 
-        self.prompt_txt = open(prompt_path).read()
+        with open(prompt_path, 'r') as file:
+            self.prompt_text = file.read()
         self.user_input_tag = user_input_tag
 
         self.model = model
-
-    def run_python_code(self):
-        raise Exception('die')
 
     def dynamic_method(self):
         #recipe = self.recipes_rag.retrieve("pizza")
@@ -30,7 +29,7 @@ class OrchestratorAgent(ABCAgent):
         #prices, total_price = self.prices_agent.get_prices(ingredients)
         #return recipe, prices, total_price
         pass
-    
+
     def prompt(self, input):
         memory = ''
         if self.memory_agent:
@@ -66,36 +65,39 @@ class OrchestratorAgent(ABCAgent):
                 return "Error generating response: No matching results found."
 
             print(result)
+            x = {}
+            x['recipes'], x['prices'], x['total_price'] = result
 
-            response = self.synthesis_agent.synthesize(input, result)
+            response = self.synthesis_agent.synthesize(input, x)
+
             
             if self.memory_agent:
                 self.memory_agent.memorize(input, response)
 
+            return response
+
         except Exception as e:
-            return f"Error generating response: Exception:\n{e}"
+            return f"Error generating response: Exception:\n{traceback.format_exc()}"
         
 
     def _query_llm(self, query:str, history:str = ''):
-        a = [
-            {
-            "role": "system",
-            "content": f"History: {history}"
-        },
-            {
-            "role": "system",
-            "content": self.prompt_txt
-        },{
-            "role": "user",
-            "content": query
-        }]
-        generated_text = self.model.prompt(a)
-        print(generated_text)
+        user_input = ''
+        if history:
+            user_input += f'History: {history}\n'
+        user_input += query
 
-        pattern = r"```(?:\w+)?\n([\s\S]+?)\n```"
-        matches = re.findall(pattern, generated_text, re.DOTALL)
-        if len(matches) > 0:
-            return matches[0]
-        else:
-            return 'return []'
+        query = self.prompt_text.replace(self.user_input_tag, user_input)
         
+        generated_text = self.model.prompt(query)
+        text_after_query = generated_text.split(query, 1)[-1]
+
+        code_match = re.search(r"(.*?)```", text_after_query, re.DOTALL)
+
+        print(code_match)
+        if code_match:
+            generated_code = code_match.group(1).strip()
+        else:
+            generated_code = "return []"
+
+        
+        return generated_code
