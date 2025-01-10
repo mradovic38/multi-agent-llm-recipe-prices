@@ -95,6 +95,17 @@ WHERE (SELECT SUM(price_for_amount) FROM product_helper WHERE search_term IN ('p
 
 **Example:** 
 
+Ingredients: banana, chocolate
+Conditions:
+
+**Output:**  
+```sql  
+SELECT * FROM product_helper  
+WHERE search_term IN ('banana', 'chocolate')
+```
+
+**Example:** 
+
 Ingredients: <ingredients>
 Conditions: <conditions>
 

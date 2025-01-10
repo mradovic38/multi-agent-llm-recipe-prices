@@ -9,7 +9,7 @@ class IngredientsAgent(ABCAgent):
     def __init__(
         self, 
         model, 
-        prompt_path="/teamspace/studios/this_studio/multi-agent-llm-recipe-prices/agents/ingredients/prompts/ingredients_prompt.txt", 
+        prompt_path="agents/ingredients/prompts/ingredients_prompt.txt", 
         ingredients_tag="<ingredients>", exclusions_tag = "<exclude>"):
         super().__init__(model)
         self.model = model
@@ -23,22 +23,27 @@ class IngredientsAgent(ABCAgent):
 
         ingredients = recipe['ingredients']
 
+
         print("Extracting ingredients...")
         exclude_str = ", ".join(exclude) if exclude else ""
 
         response = self._query_llm(ingredients, exclude_str)
 
+        ingredients_structured = json.loads(response)
+
+        ingredients_structured = self._convert_units(ingredients_structured)
+
         print("-"*100)
         print("[INGREDIENTS] Extracted ingredients:")
-        print(response)
+        print(ingredients_structured)
         print("-"*100)
 
-        ingredients_structured = json.loads(response)
         
         return  [Ingredient(**item) for item in ingredients_structured]
 
     
     def _convert_units(self, ingredients):
+
         for ingredient in ingredients:
             ingredient['unit'] = ingredient['unit'].replace(' ', '').lower()
             match ingredient['unit']:
@@ -56,19 +61,52 @@ class IngredientsAgent(ABCAgent):
                 case 'lbs':
                     ingredient['amount'] = ingredient['amount'] * 453.59237
                     ingredient['unit'] = 'g'
+                case 'cupml':
+                    ingredient['amount'] = ingredient['amount'] * 250
+                    ingredient['unit'] = 'ml'
+                case 'cupg':
+                    ingredient['amount'] = ingredient['amount'] * 250
+                    ingredient['unit'] = 'g'
+                case 'tbspg':
+                    ingredient['amount'] = ingredient['amount'] * 15
+                    ingredient['unit'] = 'g'
+                case 'tbspml':
+                    ingredient['amount'] = ingredient['amount'] * 14.7867648 
+                    ingredient['unit'] = 'ml'
+                case 'tspg':
+                    ingredient['amount'] = ingredient['amount'] * 5
+                    ingredient['unit'] = 'g'
+                case 'tspml':
+                    ingredient['amount'] = ingredient['amount'] * 4.92892159 
+                    ingredient['unit'] = 'ml'
+                case 'pint':
+                    ingredient['amount'] = ingredient['amount'] * 500 
+                    ingredient['unit'] = 'ml'
                 case _:
                     ingredient['unit'] = 'g'
+
+        return ingredients
                 
 
     def _query_llm(self, ingredients, exclusions):
         query = self.prompt_txt.replace(self.ingredients_tag, ingredients)
         query = query.replace(self.exclusions_tag, exclusions)
 
-        generated_text = self.model.prompt(query)
-        text_after_query = generated_text.split(query, 1)[-1]
-        # print(text_after_query)
+
+        parameters = {
+            "max_new_tokens": 200,       # Allow sufficient space for JSON output
+            "do_sample": True,        
+            "temperature": 0.6,         
+            "top_p": 1.0,                # Consider all high-probability tokens
+            "num_beams": 3,              # Structured output exploration
+            "length_penalty": 1.0,       # Neutral length preference
+            "early_stopping": True,      # Stop generation when the JSON is complete
+        }
+
+        generated_text = self.model.prompt(query, parameters)
+
         
-        code_match = re.search(r"(.*?)```", text_after_query, re.DOTALL)
+        code_match = re.search(r"(.*?)```", generated_text, re.DOTALL)
         if code_match:
             generated_code = code_match.group(1).strip()
         else:

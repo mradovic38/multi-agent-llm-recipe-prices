@@ -65,22 +65,20 @@ class APIDecoderModel(ABCDecoderModel):
             print(response.status_code)
         return "<ERROR>"
 
+from transformers import LlamaTokenizer, LlamaForCausalLM
 
 class LocalDecoderModel(ABCDecoderModel):
     def __init__(self):
         #model_name = "phi-3.5-mini-instruct"
         #model_name = "phi-3.5-mini-instruct"
-        model_name = "/teamspace/studios/this_studio/multi-agent-llm-recipe-prices/models/zephyr-7b-beta-local"
+        model_name = "openlm-research/open_llama_7b_v2"#"/teamspace/studios/this_studio/multi-agent-llm-recipe-prices/models/zephyr-7b-beta-local"
         # tokenizer = AutoTokenizer.from_pretrained(model_name)
         # device = "cpu"
-        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, use_fast=True)
+        tokenizer = LlamaTokenizer.from_pretrained(model_name)
         quantization_config = BitsAndBytesConfig(
-           load_in_4bit=True,  # Use 4-bit quantization
-           bnb_4bit_use_double_quant=True,
-           bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.float16,
+            load_in_8bit=True,  # Use 8-bit quantization
         )
-        model = AutoModelForCausalLM.from_pretrained(
+        model = LlamaForCausalLM.from_pretrained(
             model_name,
             device_map='auto',
             pad_token_id=tokenizer.eos_token_id,
@@ -115,18 +113,21 @@ class LocalDecoderModel(ABCDecoderModel):
             return assistant_response
         return ""
 
+    DEFAULT_GENERATION_PARAMETERS = {
+        "max_new_tokens": 512,
+        "do_sample": True,
+        "temperature": 0.6,
+        "top_p": 0.95,
+        "pad_token_id": None,
+        "eos_token_id": None,
+        "num_return_sequences": 1,
+        "early_stopping": True,
+    }
+
     def prompt(self, input_t, parameters=None) -> str:
-        if parameters is None:
-            parameters = {
-                "max_new_tokens": 200,
-                'do_sample': True,
-                'temperature': 0.6,
-                'top_p': 0.95,
-                'pad_token_id': self.tokenizer.pad_token_id,
-                'eos_token_id': self.tokenizer.eos_token_id,
-                'num_return_sequences': 1,
-                'max_new_tokens': 128
-            }
+        final_parameters = {**self.DEFAULT_GENERATION_PARAMETERS, **(parameters or {})}
+        final_parameters["pad_token_id"] = self.tokenizer.pad_token_id
+        final_parameters["eos_token_id"] = self.tokenizer.eos_token_id
 
             # parameters = {
             #     "max_new_tokens": 1000,
@@ -142,27 +143,25 @@ class LocalDecoderModel(ABCDecoderModel):
 
         # inputs_t = self.tokenizer(input, return_tensors="pt", truncation=True).to(self.model.device)
         #inputs_t = self.tokenizer.apply_chat_template(input, tokenize=True, add_generation_prompt=True, return_tensors="pt").to(self.model.device)
-        input_id = self.tokenizer.encode(input_t, return_tensors="pt").to(self.model.device)
+        input_ids = self.tokenizer.encode(input_t, return_tensors="pt").to(self.model.device)
         with torch.no_grad():
             outputs = self.model.generate(
-                input_id,
-                #inputs_t,
-            do_sample=True,
-            max_new_tokens=512,
-            temperature=0.6,
-            top_p=0.95,
-            pad_token_id=self.tokenizer.pad_token_id,
-            eos_token_id=self.tokenizer.eos_token_id,
-            num_return_sequences=1,
+                input_ids,
+                **final_parameters
             )
    
-        out = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        generated_tokens = outputs[:, input_ids.size(1):]  # Exclude input tokens
+
+        # Decode the new tokens
+        out = self.tokenizer.decode(generated_tokens[0], skip_special_tokens=True)
         #input.to('cpu')
         #del input
-        torch.cuda.empty_cache()
-        torch.cuda.synchronize()
+        with torch.no_grad():
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
        # if only_assist:
            # return self.assistant_only(out)
+
         return out
 
     def free(self):

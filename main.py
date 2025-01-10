@@ -24,9 +24,12 @@ try:
         PricesAgent(decoder_model, scraper, extractor, manager),
         SynthesisAgent(decoder_model),
         MemoryAgent(decoder_model))
-    user_in = "How to make a pizza and how much are the ingredients?"
+    user_in = "Recipe for cookies"
     resp = orchestrator_agent.prompt(user_in)
+    print("-"*100)
+    print("Synthesized response:")
     print(resp)
+    print("-"*100)
 except Exception as e:
     print(e)
 finally:

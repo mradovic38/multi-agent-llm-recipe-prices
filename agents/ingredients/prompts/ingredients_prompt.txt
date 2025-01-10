@@ -2,9 +2,9 @@ Your job is to extract ingredients in as a structured JSON list from an unstruct
 Each JSON ingredient contains three keys: 
 - `name` (str): the name of the ingredient
 - `amount` (int): how much of that ingredient is needed
-- `unit` (str): "g", "ml", "l", "oz", "lbs", "kg" or "item"
+- `unit` (str): "g", "ml", "l", "oz", "lbs", "kg", "tsp g", "tsp ml", "tbsp g", "tbsp ml", "cup g", "cup ml", "pint" or "item"
 
-Convert every item to one of the mentioned units (example: 1 avocado to 200g avocado)
+Convert every item to one of the mentioned units (example: 1 avocado to 200g avocado). If you are not sure which unit to use, use grams (g).
 ---
 
 **Example:**
@@ -131,6 +131,39 @@ onion
         "name": "garlic",
         "amount": 25,
         "unit": "g"
+    }
+]
+```
+
+**Example:**
+**Ingredients:**
+- 1 pint heavy cream\n- 1 cup milk (whole milk recommended)\n- 2 Tbsp vanilla extract\n- 1/2 cup honey\n- 1 cup sugar
+
+**Exclude:**
+milk
+
+**JSON Output:**
+```json
+[
+    {
+        "name": "cream",
+        "amount": 1,
+        "unit": "pint"
+    },
+    {
+        "name": "vanilla extract",
+        "amount": 2,
+        "unit": "tbsp ml"
+    },
+    {
+        "name": "honey",
+        "amount": 0.5,
+        "unit": "cup g"
+    },
+    {
+        "name": "sugar",
+        "amount": 1,
+        "unit": "cup g"
     }
 ]
 ```

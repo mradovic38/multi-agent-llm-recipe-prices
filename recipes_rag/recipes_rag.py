@@ -6,8 +6,8 @@ import json
 import os
 
 class RecipesRAG:
-    def __init__(self, raw_json_file: str = '/teamspace/studios/this_studio/multi-agent-llm-recipe-prices/recipes_rag/recipes.json', 
-                 processed_json_file: str = '/teamspace/studios/this_studio/multi-agent-llm-recipe-prices/recipes_rag/recipes_processed.json', 
+    def __init__(self, raw_json_file: str = 'recipes_rag/recipes.json', 
+                 processed_json_file: str = 'recipes_rag/recipes_processed.json', 
                  index_file: str = "/teamspace/studios/this_studio/multi-agent-llm-recipe-prices/recipes_rag/recipes.index"):
         """Initialize the RecipesRAG class by indexing recipes."""
         self.model = SentenceTransformer('all-MiniLM-L6-v2')  # Use a lightweight BERT model
@@ -46,16 +46,20 @@ class RecipesRAG:
         scores, indices = self.index.search(query_embedding, top_k)
         # If the score is requested, include it in the response
         if return_scores:
-            return [
+            recipes = [
                 {"recipe": self.recipes_raw[idx], "score": scores[0][i]}
                 for i, idx in enumerate(indices[0]) if idx < len(self.recipes_raw)
             ]
         else:
             # Only return the recipes, without scores
-            return [
+            recipes = [
                 self.recipes_raw[idx]
                 for _, idx in enumerate(indices[0]) if idx < len(self.recipes_raw)
             ]
+        print('-'*100)
+        print(f'[ORCHESTRATOR][RECIPES] Relevant recipes: {recipes}')
+        print('-'*100)
+        return recipes
         
 if __name__ == '__main__':
 
@@ -63,7 +67,7 @@ if __name__ == '__main__':
     rag = RecipesRAG()
 
     # Retrieve recipes
-    query = "peperonni pizaz"
+    query = "peperonni pizza"
     results = rag.retrieve(query, top_k=5, return_scores=True)
     for result in results:
         print(f"Title: {result['recipe']['title']}, Score: {result['score']}")

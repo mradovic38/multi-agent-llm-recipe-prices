@@ -10,7 +10,7 @@ class OrchestratorAgent():
 
     def __init__(self, model, recipes_rag: RecipesRAG, ingredients_agent: IngredientsAgent, 
     prices_agent, synthesis_agent: SynthesisAgent, memory_agent=None, 
-    prompt_path:str='multi-agent-llm-recipe-prices/agents/orchestrator/prompts/orchestrator_prompt.txt', user_input_tag:str = '<user-input>'):
+    prompt_path:str='agents/orchestrator/prompts/orchestrator_prompt.txt', user_input_tag:str = '<user-input>'):
 
         self.memory_agent = memory_agent
         self.synthesis_agent = synthesis_agent
@@ -41,7 +41,6 @@ class OrchestratorAgent():
             print("Planning...") # Print to let the user know which step is the current
 
             code = self._query_llm(input, memory)
-            print(code)
 
             code = code = code.replace('extract_ingredients', 'self.ingredients_agent.extract_ingredients')
             code = code.replace('get_prices', 'self.prices_agent.get_prices')
@@ -68,6 +67,8 @@ class OrchestratorAgent():
                 return "Error generating response: No matching results found."
 
             response = self.synthesis_agent.synthesize(input, result)
+            if response==None:
+                return "Error generating response: Synthesis could not be performed."
 
             
             if self.memory_agent:
@@ -87,12 +88,22 @@ class OrchestratorAgent():
 
         query = self.prompt_text.replace(self.user_input_tag, user_input)
         
-        generated_text = self.model.prompt(query)
-        text_after_query = generated_text.split(query, 1)[-1]
+        parameters = {
+            "max_new_tokens": 150,       # Ensure enough room for generating code
+            "do_sample": True,         
+            "temperature": 0.4,        
+            "top_p": 1.0,                # Focus on most likely completions
+            "num_beams": 5,              # Balance between diversity and accuracy
+            "length_penalty": 1.0,       # Neutral length preference
+            "early_stopping": True,      # Stop generation once valid code is formed
+        }
 
-        code_match = re.search(r"(.*?)```", text_after_query, re.DOTALL)
+        generated_text = self.model.prompt(query, parameters)
+       
 
-        print(code_match)
+
+        code_match = re.search(r"(.*?)```", generated_text, re.DOTALL)
+
         if code_match:
             generated_code = code_match.group(1).strip()
         else:

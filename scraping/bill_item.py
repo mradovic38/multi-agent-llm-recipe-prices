@@ -22,3 +22,7 @@ class BillItem:
             self.contains_allergens = []
         if self.does_not_contain_allergens is None:
             self.does_not_contain_allergens = [] 
+
+    def __repr__(self):
+        price_parts = (str(self.price)).split('.')
+        return f"{self.product_name} ({self.amount} x {price_parts[0]} RSD)"
