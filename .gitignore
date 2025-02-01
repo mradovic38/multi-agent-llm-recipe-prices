@@ -12,3 +12,4 @@ models/zephyr-7b-beta-local/*
 unused
 *.db
 *.jar
+.env

@@ -1,12 +1,17 @@
-import json
+from models import ABCModel
 
-class ABCAgent:
-    def __init__(self, model, prompt_path:str = None, params_path:str = None):
+import json
+from abc import ABC, abstractmethod
+
+
+class ABCAgent(ABC):
+
+    def __init__(self, model: ABCModel, prompt_path:str = None, params_path:str = None):
         """
         Initializes the ABCAgent with a model and optional paths to a prompt file and parameters file.
 
         Args:
-            model: The model object used for generating responses.
+            model (ABCModel): The model object used for generating responses.
             prompt_path (str, optional): Path to a file containing the prompt template. Defaults to None.
             params_path (str, optional): Path to a JSON file containing model parameters. Defaults to None.
         """
@@ -39,7 +44,7 @@ class ABCAgent:
 
         return self._cleanup_response(generated_text)
     
-    
+    @abstractmethod
     def _build_query(self, **kwargs) -> str:
         """
         Builds the query to be sent to the model. This method should be overridden in subclasses to customize
