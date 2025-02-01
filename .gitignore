@@ -2,7 +2,13 @@
 __pycache__
 content
 prices_scraper.py
+tool_agent.py
 
 models/t5-3b/*
 models/t5-large/*
 models/zephyr-7b-beta-local/*
+*.pdf
+*.rnote
+unused
+*.db
+*.jar

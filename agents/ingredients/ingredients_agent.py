@@ -1,38 +1,51 @@
+from agents.ABCAgent import ABCAgent
+from tools.ingredients.ingredient import Ingredient
+
 import json
 from typing import List
 import re
-from agents.ABCAgent import ABCAgent
-
-from ingredient import Ingredient
 
 class IngredientsAgent(ABCAgent):
     def __init__(
         self, 
         model, 
-        prompt_path="agents/ingredients/prompts/ingredients_prompt.txt", 
-        ingredients_tag="<ingredients>", exclusions_tag = "<exclude>"):
-        super().__init__(model)
-        self.model = model
-        self.prompt_txt = open(prompt_path).read()
+        prompt_path="agents/ingredients/prompts/ingredients_prompt.txt",
+        params_path='agents/ingredients/params.json',
+        ingredients_tag="<ingredients>", 
+        exclusions_tag = "<exclude>"):
+
+        super().__init__(model, prompt_path, params_path)
         self.ingredients_tag = ingredients_tag
         self.exclusions_tag = exclusions_tag
         
-    def extract_ingredients(self, recipe, exclude:List[str] = []):
+    def extract_ingredients(self, recipe, exclude:List[str] = []) -> List[Ingredient]:
+        """
+        Extract ingredients in a structured format from ingredients text. Converts the units to metric system as well.
+
+        Args:
+            recipe: A recipe to extract ingredients from or a list of needed ingredients.
+            exclude: A list of items to exclude when searching.
+
+        Returns:
+            List[Ingredient]: A list of ingredients to search for.
+        """
+
         if isinstance(recipe, list):
             recipe = recipe[0]
 
         ingredients = recipe['ingredients']
 
 
-        print("Extracting ingredients...")
+        print("Extracting ingredients...") # Print to let the user know that the ingredients are being extracted
         exclude_str = ", ".join(exclude) if exclude else ""
 
-        response = self._query_llm(ingredients, exclude_str)
+        response = self._query_llm(ingredients=ingredients, exclusions=exclude_str)
 
         ingredients_structured = json.loads(response)
 
         ingredients_structured = self._convert_units(ingredients_structured)
 
+        # Display extracted ingredients 
         print("-"*100)
         print("[INGREDIENTS] Extracted ingredients:")
         print(ingredients_structured)
@@ -42,8 +55,16 @@ class IngredientsAgent(ABCAgent):
         return  [Ingredient(**item) for item in ingredients_structured]
 
     
-    def _convert_units(self, ingredients):
+    def _convert_units(self, ingredients) -> List[dict]:
+        """
+        Converts units from ingredients to metric system (since the prices data is from a European store).
 
+        Args:
+            ingredients (List[dict]): A list of ingredients
+
+        Returns:
+            List[dict]: Ingredients with converted units
+        """
         for ingredient in ingredients:
             ingredient['unit'] = ingredient['unit'].replace(' ', '').lower()
             match ingredient['unit']:
@@ -88,28 +109,21 @@ class IngredientsAgent(ABCAgent):
         return ingredients
                 
 
-    def _query_llm(self, ingredients, exclusions):
+    def _build_query(self, **kwargs) -> str:
+        ingredients = kwargs['ingredients']
+        exclusions = kwargs.get('exclusions', '')
+
         query = self.prompt_txt.replace(self.ingredients_tag, ingredients)
         query = query.replace(self.exclusions_tag, exclusions)
-
-
-        parameters = {
-            "max_new_tokens": 200,       # Allow sufficient space for JSON output
-            "do_sample": True,        
-            "temperature": 0.6,         
-            "top_p": 1.0,                # Consider all high-probability tokens
-            "num_beams": 3,              # Structured output exploration
-            "length_penalty": 1.0,       # Neutral length preference
-            "early_stopping": True,      # Stop generation when the JSON is complete
-        }
-
-        generated_text = self.model.prompt(query, parameters)
-
         
+        return query
+    
+    def _cleanup_response(self, generated_text) -> str:
+
         code_match = re.search(r"(.*?)```", generated_text, re.DOTALL)
+
         if code_match:
             generated_code = code_match.group(1).strip()
         else:
             generated_code = '[]'
         return generated_code
-  

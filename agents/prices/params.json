@@ -1,0 +1,9 @@
+{
+    "max_new_tokens": 150,
+    "do_sample": true,         
+    "temperature": 0.2,        
+    "top_p": 0.98,
+    "num_beams": 3,
+    "length_penalty": 1.0,
+    "early_stopping": true
+}

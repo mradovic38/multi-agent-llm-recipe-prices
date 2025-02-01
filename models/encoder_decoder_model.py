@@ -4,7 +4,6 @@ import time
 import requests
 import json
 
-# Zbog siromastva i manjka vremena promptujemo online modele nekad
 
 class ABCEncoderDecoderModel:
     def prompt(self, input, parameters) -> str:
