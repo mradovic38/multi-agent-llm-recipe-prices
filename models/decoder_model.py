@@ -4,8 +4,6 @@ import re
 import requests
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 
-# Zbog siromastva i manjka vremena promptujemo online modele nekad
-# Mozda oba decoder i encoder decoder treba da imaju prompt ABCModel koji ima prompt str, dict -> str
 
 class ABCDecoderModel:
     def prompt(self, input_t, parameters) -> str:

@@ -1,51 +1,81 @@
+from agents.ABCAgent import ABCAgent
+
 import re
 import json
 
 
-class SynthesisAgent():
+class SynthesisAgent(ABCAgent):
 
-    def __init__(self, model, prompt_path:str='agents/synthesis/prompts/synthesis_prompt.txt', 
-    user_input_tag:str = '<user-input>', data_tag:str = '<data>', total_price_tag:str = '<total-price>'):
+    def __init__(self, 
+                 model, 
+                 prompt_path:str = 'agents/synthesis/prompts/synthesis_prompt.txt',
+                 params_path:str = 'agents/synthesis/params.json',
+                 user_input_tag:str = '<user-input>', 
+                 data_tag:str = '<data>', 
+                 total_price_tag:str = '<total-price>'):
 
-        with open(prompt_path, 'r') as file:
-            self.prompt_text = file.read()
+
+        super().__init__(model, prompt_path, params_path)
 
         self.user_input_tag = user_input_tag
         self.data_tag = data_tag
         self.total_price_tag = total_price_tag
 
-        self.model = model
-
     def total_price_builder(self, total_price):
+        """
+        Formats the text to display the total price to the user.
+        """
         price_parts = (str(total_price)).split('.')
         return f"The total cost is {price_parts[0]}.{price_parts[1][:2]} RSD."
 
-    def synthesize(self, user_input, data):
+    def synthesize(self, user_input, data) -> str:
+        """
+        Synthesized the response to give the user, based on a provided data and user query.
 
-        print('Synthesizing the answer...')
-        recipes_data, bill_data, total_price = data 
+        Args:
+            user_input (str): User query to respond to.
+            data: Data to be used for generating a more accurate response.
+
+        Returns:
+            str: Answer to user query.
+        """
+
+        print('Synthesizing the answer...') # Print the current step
+
+        recipes_data, bill_data, total_price = data # Extract data from tuple
+
+        # If total price is 0, do not display it
         if total_price == 0:
             total_price = None
 
+        # Display total price
         if total_price:
             total_price = self.total_price_builder(total_price)
         
-        response = self._query_llm(user_input, recipes_data, bill_data, total_price)
+        # Query the LLM to synthesize data to return consistent output text.
+        response = self._query_llm(query=user_input, recipes=recipes_data, bill=bill_data, price=total_price)
 
         if total_price:
             response += f'\n{total_price}'
 
-
         return response
         
     def _convert_to_json(self, products):
+        """
+        Converts to JSON to provide the LLM with more structured info.
+        """
         return json.dumps(
             {key: str(item) for key, item in products.items()},
             indent=4
         )
-
-    def _query_llm(self, user_input:str, recipes_data, bill_data, total_price):
         
+
+    def _build_query(self, **kwargs) -> str:
+        user_input = kwargs['query']
+        recipes_data = kwargs.get('recipes', None)
+        bill_data = kwargs.get('bill', None)
+        total_price = kwargs.get('price', None)
+
         data_input = ''
         if recipes_data:
             data_input += f'**Recipes:**\n```json\n{json.dumps(recipes_data, indent=4)}\n```'
@@ -61,24 +91,10 @@ class SynthesisAgent():
             query = query.replace(self.total_price_tag, total_price)
         else:
             query = query.replace(self.total_price_tag, "")
-
-
-        # print('--TEST---')
-        # print(query)
-        # print('--TEST---')
-
-        parameters = {
-            "max_new_tokens": 400,  # Adequate for recipe and price synthesis
-            "do_sample": True,      # Encourage variability in phrasing
-            "temperature": 0.6,    
-            "top_p": 0.9,           # Use nucleus sampling for focused outputs
-            "num_beams": 3,         # Explore alternative responses
-            "early_stopping": True, # Stop when the output is complete
-        }
-        
-        generated_text = self.model.prompt(query, parameters)
-        # print(generated_text)
-        
+            
+        return query
+    
+    def _cleanup_response(self, generated_text) -> str:
         response = re.search(r"(.*?)---", generated_text, re.DOTALL)
 
         if response:
