@@ -18,10 +18,14 @@ class ABCModel(ABC):
         pass
 
     @abstractmethod
-    def prompt(self, query, params:str = None) -> str:
-        # # Merge with default parameters
-        # self.params = {**self.default_params, **(params or {})}
-        # self.params["pad_token_id"] = self.tokenizer.pad_token_id
-        # self.params["eos_token_id"] = self.tokenizer.eos_token_id   
-
+    def prompt(self, query: str, params:dict=None, **kwargs) -> str:
         pass
+
+    def _merge_and_set_params(self, params:str = {}) -> str:
+        params = {**self.default_params, **(params or {})}
+
+        if self.tokenizer:
+            params["pad_token_id"] = self.tokenizer.pad_token_id
+            params["eos_token_id"] = self.tokenizer.eos_token_id
+
+        return params
