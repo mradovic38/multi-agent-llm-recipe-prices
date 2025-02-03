@@ -7,6 +7,7 @@ This project focuses on the development of a system of LLM agents designed to as
 2. [Agent Descriptions](#2-agent-descriptions)
 3. [System Architecture](#3-system-architecture)
 4. [Conclusions](#4-conclusions)
+5. [Resources](#-resources)
 
 ## 1. Problem Analysis
 The main goal of this project is to develop a system of LLM agents that address users' needs for easier meal planning and cost optimization during grocery shopping. Users seek the ability to search, combine, and utilize information from two key knowledge bases—recipes and grocery store prices. The system enables personalized meal creation based on available ingredients and current prices, providing precise, relevant, and coherent responses to complex queries.
@@ -144,3 +145,9 @@ After implementing the system, the performance of each agent was assessed to ide
 </table>
 
 *Table 1: Performance evaluation of the solution.*
+
+## 📖 Resources
+1. [Public Domain Recipes](https://publicdomainrecipes.com)
+2. [Building effective agents by Anthropic](https://www.anthropic.com/research/building-effective-agents)
+3. [smolagents by Hugging Face 🤗](https://github.com/huggingface/smolagents)
+4. [OpenLLaMA 7B v2](https://huggingface.co/openlm-research/open_llama_7b_v2)
