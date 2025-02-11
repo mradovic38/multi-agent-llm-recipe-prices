@@ -74,7 +74,7 @@ Based on the query and response, the memory agent stores necessary information i
    return recipe, prices, total_price
    ```
 3. The recipe is retrieved from the vector database.
-4. The ingredient agent extracts all ingredients from the recipe text and, using a unit conversion tool, converts them into SI units (e.g., oz. to grams) and formats them into JSON, e.g.:
+4. The ingredient agent extracts all ingredients from the recipe text and, using a unit conversion tool, converts them into common European units (e.g., oz. to grams) and formats them into JSON, e.g.:
    ```json
    [
      {
